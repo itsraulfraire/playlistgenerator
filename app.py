@@ -94,12 +94,13 @@ def preferencias():
 # RUTAS PLAYLISTS
 # ========================
 @app.route("/playlists")
-def padrinos():
+@login
+def playlists():
     return render_template("playlists.html")
 
-@app.route("/tbodyPlaylist")
+@app.route("/tbodyPlaylists")
 @login
-def tbodyPLaylist():
+def tbodyPLaylists():
     con = get_connection()
     cursor = con.cursor(dictionary=True)
     sql    = """
@@ -153,5 +154,3 @@ def buscarPlaylists():
         con.close()
 
     return make_response(jsonify(registros))
-
-
