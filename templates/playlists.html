@@ -1,0 +1,20 @@
+<div class="container py-3">
+    <div class="row mb-3">
+        <div class="col-6">
+            <h3>Playlists</h3>
+        </div>
+        <div class="col-6 text-end">
+            <button class="btn btn-secondary btn-cerrar-sesion while-waiting" ng-show="login">
+                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+            </button>
+        </div>
+    </div>
+
+    <div id="playlistsGrid" class="row">
+        <div class="text-center w-100 py-4" ng-if="!playlists || playlists.length==0">
+            <div>No se encontraron playlists.</div>
+        </div>
+    </div>
+
+    <div class="div-to-complete-screen"></div>
+</div>
