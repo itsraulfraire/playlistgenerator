@@ -73,7 +73,7 @@ app.run(["$rootScope", "$location", "$timeout", function($rootScope, $location, 
     $rootScope.incompleteRequest = false
     $rootScope.completeRequest   = false
     $rootScope.login             = localStorage.getItem("login")
-    const defaultRouteAuth       = "#/mascotas"
+    const defaultRouteAuth       = "#/playlists"
     let timesChangesSuccessRoute = 0
 
 
@@ -539,37 +539,33 @@ app.controller("loginCtrl", function ($scope, $http, $rootScope) {
     })
 })
 
-app.controller("playlistsCtrl", function ($scope, $http) {
-    function buscarPlaylists() {
-        $.get("/tbodyPlaylist", function (trsHTML) {
-            $("#tbodyPlaylist").html(trsHTML)
-        })
-    }
-
-    buscarPlaylists()
-
-    let timer = null
-    $("#txtBuscarPlaylist").on("keyup", function () {
-        clearTimeout(timer)
-        const busqueda = $(this).val()
-        timer = setTimeout(() => {
-            $.get("/playlists/buscar", { busqueda: busqueda }, function (data) {
-                let html = ""
-                data.forEach(m => {
+app.controller("padrinosCtrl", function ($scope, $http) {
+    function buscarPlaylists(texto = "") {
+        if (texto.trim() === "") {
+            $.get("/tbodyPlaylist", function (trsHTML) {
+                $("#tbodyPlaylist").html(trsHTML);
+            });
+        } else {
+            $.get("/playlists/buscar", { busqueda: texto }, function (data) {
+                let html = "";
+                data.forEach(playlist => {
                     html += `
                         <tr>
-                            <td>${m.idPlaylist}</td>
-                            <td>${m.nombre}</td>
-                            <td>${m.descripcion}</td>
-                            <td>${m.url}</td>
-                            <td>${m.id_usuario}</td>
+                            <td>${playlist.idPlaylist}</td>
+                            <td>${playlist.nombre}</td>
+                            <td>${playlist.descipcion}</td>
+                            <td>${playlist.url}</td>
+                            <td>${playlist.id_usuarios}</td>
+                              
                         </tr>
-                    `
-                })
-                $("#tbodyPlaylist").html(html)
-            })
-        }, 300)
-    })
+                    `;
+                });
+                $("#tbodyPlaylist").html(html);
+            });
+        }
+    }    
+
+    buscarPlaylists()
 })
 
 document.addEventListener("DOMContentLoaded", function (event) {
