@@ -1,107 +1,86 @@
-from flask import Flask, render_template, request, jsonify, session, make_response
+from flask import Flask, jsonify, request, render_template
+from config.database import DatabaseConnection
+from config.playlist_factory import PlaylistFactory
 from flask_cors import CORS
+import jwt
+import datetime
 from functools import wraps
-from config.database import DatabaseSingleton
 
 app = Flask(__name__)
-app.secret_key = "super-secret-playlist-2025"
+app.secret_key = "ultra_secret"
 CORS(app)
 
-class Playlist:
-    def __init__(self, idPlaylist, nombre, descripcion, url, id_usuarios):
-        self.idPlaylist = idPlaylist
-        self.nombre = nombre
-        self.descripcion = descripcion
-        self.url = url
-        self.id_usuarios = id_usuarios
+# Verificación del token
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
 
-class PlaylistFactory:
-    @staticmethod
-    def crear(row):
-        return Playlist(
-            row["idPlaylist"],
-            row["nombre"],
-            row["descripcion"],
-            row["url"],
-            row["id_usuarios"]
-        )
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(" ")[1]
 
-def login_required(fun):
-    @wraps(fun)
-    def decorador(*args, **kwargs):
-        if not session.get("login"):
-            return jsonify({"estado": "error", "mensaje": "No has iniciado sesión"}), 401
-        return fun(*args, **kwargs)
-    return decorador
+        if not token:
+            return jsonify({'error': 'Token requerido'}), 401
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+        try:
+            data = jwt.decode(token, app.secret_key, algorithms=["HS256"])
+            usuario_id = data['usuario_id']
+        except:
+            return jsonify({'error': 'Token inválido'}), 401
 
-@app.route("/login")
-def loginView():
+        return f(usuario_id, *args, **kwargs)
+    return decorated
+
+
+@app.route('/')
+def login_page():
     return render_template("login.html")
 
-@app.route("/playlists")
-@login_required
-def playlistView():
-    return render_template("playlists.html")
 
-@app.route("/api/login", methods=["POST"])
+# LOGIN con JWT
+@app.route('/login', methods=['POST'])
 def login():
-    user = request.json.get("usuario")
-    password = request.json.get("contrasena")
+    data = request.get_json()
+    email = data["email"]
+    contrasena = data["contrasena"]
 
-    db = DatabaseSingleton.get_instance().get_connection()
-    cursor = db.cursor(dictionary=True)
+    conn = DatabaseConnection.get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM usuarios WHERE email=%s AND contrasena=%s",
+                   (email, contrasena))
+    user = cursor.fetchone()
 
-    query = """
-        SELECT id_usuarios, username
-        FROM usuarios
-        WHERE username = %s AND password = %s 
-    """
-    cursor.execute(query, (user, password))
-    result = cursor.fetchone()
-    cursor.close()
+    if not user:
+        return jsonify({"error": "Credenciales incorrectas"}), 401
 
-    if result:
-        session["login"] = True
-        session["id_usuario"] = result["id_usuarios"]
-        session["username"] = result["username"]
-        return jsonify({"estado": "ok", "usuario": result})
+    token = jwt.encode({
+        "usuario_id": user["id_usuario"],
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+    }, app.secret_key, algorithm="HS256")
 
-    return jsonify({"estado": "error", "mensaje": "Credenciales incorrectas"})
+    return jsonify({"token": token})
 
-@app.route("/api/logout", methods=["POST"])
-def logout():
-    session.clear()
-    return jsonify({"estado": "ok"})
 
-@app.route("/api/playlists", methods=["GET"])
-@login_required
-def listarPlaylists():
-    user_id = session.get("id_usuario")
-    db = DatabaseSingleton.get_instance().get_connection()
-    cursor = db.cursor(dictionary=True)
+# R: Mostrar playlists
+@app.route('/api/playlists', methods=['GET'])
+@token_required
+def obtener_playlists(usuario_id):
+    conn = DatabaseConnection.get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        "SELECT idPlaylist, nombre, descripcion, url FROM playlists WHERE id_usuarios = %s",
+        (usuario_id,)
+    )
+    filas = cursor.fetchall()
 
-    query = """
-        SELECT idPlaylist, nombre, descripcion, url, id_usuarios
-        FROM playlists
-        WHERE id_usuarios = %s
-    """
-    cursor.execute(query, (user_id,))
-    rows = cursor.fetchall()
-    cursor.close()
-
-    playlists = [PlaylistFactory.crear(r).__dict__ for r in rows]
+    playlists = [PlaylistFactory.create(p).__dict__ for p in filas]
     return jsonify(playlists)
 
-@app.route("/api/session")
-def estado_sesion():
-    return jsonify({
-        "login": session.get("login", False),
-        "usuario": session.get("username","")
-    })
+
+@app.route('/playlists')
+def playlists_view():
+    return render_template("playlists.html")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
