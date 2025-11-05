@@ -1,12 +1,25 @@
-from flask_sqlalchemy import SQLAlchemy
+import mysql.connector
 
-class Database:
-    _instance = None
-    db = None
+class DatabaseSingleton:
+    __instance = None
 
-    def __new__(cls, app=None):
-        if not cls._instance:
-            cls._instance = super(Database, cls).__new__(cls)
-            if app:
-                cls.db = SQLAlchemy(app)
-        return cls._instance
+    @staticmethod
+    def get_instance():
+        if DatabaseSingleton.__instance is None:
+            DatabaseSingleton()
+        return DatabaseSingleton.__instance
+
+    def __init__(self):
+        if DatabaseSingleton.__instance is not None:
+            raise Exception("Esta clase es un Singleton!")
+        else:
+            DatabaseSingleton.__instance = self
+            self.connection = mysql.connector.connect(
+                host="185.232.14.52",
+                user="u760464709_23005270_usr",
+                password="$x[QjFu>Lt9H",
+                database="u760464709_23005270_bd"
+            )
+
+    def get_connection(self):
+        return self.connection
