@@ -4,7 +4,6 @@ import mysql.connector
 import datetime
 import pytz
 from functools import wraps
-from routes.mascotas_routes import mascotas_bp
 
 def get_connection():
     return mysql.connector.connect(
@@ -156,3 +155,4 @@ def buscarPlaylists():
         con.close()
 
     return make_response(jsonify(registros))
+
