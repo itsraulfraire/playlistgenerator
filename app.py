@@ -17,8 +17,6 @@ app = Flask(__name__)
 app.secret_key = "clave-super-secreta-2025"
 CORS(app)
 
-app.register_blueprint(mascotas_bp)
-
 def login(fun):
     @wraps(fun)
     def decorador(*args, **kwargs):
@@ -155,4 +153,5 @@ def buscarPlaylists():
         con.close()
 
     return make_response(jsonify(registros))
+
 
