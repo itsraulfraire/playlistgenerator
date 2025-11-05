@@ -539,7 +539,7 @@ app.controller("loginCtrl", function ($scope, $http, $rootScope) {
     })
 })
 
-app.controller("padrinosCtrl", function ($scope, $http) {
+app.controller("playlistsCtrl", function ($scope, $http) {
     function buscarPlaylists(texto = "") {
         if (texto.trim() === "") {
             $.get("/tbodyPlaylist", function (trsHTML) {
@@ -571,4 +571,3 @@ app.controller("padrinosCtrl", function ($scope, $http) {
 document.addEventListener("DOMContentLoaded", function (event) {
     activeMenuOption(location.hash)
 })
-
